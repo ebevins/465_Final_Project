@@ -4,7 +4,6 @@
 
 PRAGMA foreign_keys = ON;
 
-
 -- SELLERS
 
 INSERT INTO Seller
@@ -165,6 +164,7 @@ VALUES
 
 
 -- SALE ITEMS
+-- Each physical card appears at most once here
 
 INSERT INTO SaleItem
 (SaleItemID, SaleID, CardID, SalePrice)
@@ -179,11 +179,5 @@ VALUES
 
 (6, 4, 14, 650.00),
 
-(7, 5, 18, 525.00),
-
-(8, 6, 5, 410.00),
-
-(9, 7, 12, 235.00),
-
-(10, 8, 2, 360.00);
+(7, 5, 18, 525.00);
 
