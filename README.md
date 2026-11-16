@@ -1,109 +1,127 @@
 # COSC 465 Final Project
-
 ## Sports Card Inventory and Sales System
 
-### DBMS Used
+## Project Overview
 
-SQLite
+This SQLite application helps a small sports card business track cards, purchases from sellers, sales to buyers, and current inventory. A user can browse cards, review their transaction history, add purchases, update card details, review summary reports, and record sales.
 
-## Setup Instructions
+## DBMS
 
-1. Open a terminal in the project folder.
-2. Start SQLite by running:
+SQLite. The command-line application is written in Python and uses the built-in `sqlite3` module. It requires no third-party Python packages.
+
+## Repository Contents
+
+- `schema.sql` creates the seven tables, keys, constraints, `CurrentInventory` view, and player-name index.
+- `insert_data.sql` loads the sample sellers, buyers, cards, purchases, and sales.
+- `queries.sql` contains the nine Deliverable 4 query examples.
+- `transaction.sql` demonstrates a sale transaction and rolls it back to preserve sample data.
+- `run_queries.sh` recreates the local database, runs `queries.sql`, and runs `transaction.sql`.
+- `app.py` provides the interactive six-operation command-line menu.
+- `database.py` contains the SQLite connection helper and parameterized database operations.
+- `Database ER diagram (crow's foot).pdf` is the project ER diagram.
+- `.gitignore` excludes the generated local database and Python cache files.
+- `sports_cards.db` is generated locally by the setup commands and is not required in the repository.
+
+## Database Setup
+
+Run these commands from the repository root, in this order:
 
 ```bash
-sqlite3 sports_cards.db
+rm -f sports_cards.db
+sqlite3 sports_cards.db < schema.sql
+sqlite3 sports_cards.db < insert_data.sql
 ```
 
-3. Run the schema file:
+`schema.sql` creates the structure before `insert_data.sql` loads rows. Both SQL files enable SQLite foreign-key enforcement with `PRAGMA foreign_keys = ON`. The application enables foreign keys separately on every connection. SQLite foreign-key enforcement is connection-specific.
 
-```sql
-.read schema.sql
+## SQL Testing
+
+Run:
+
+```bash
+bash run_queries.sh
 ```
 
-4. Run the sample data file:
+The script recreates `sports_cards.db` from the two SQL setup files, executes the nine queries with column headings, and runs the transaction demonstration. The demonstration rolls back its sample sale so the sample data remains intact. The script requires Bash and the SQLite command-line tool (`sqlite3`); set `SQLITE` to the executable path if it is not on `PATH`.
 
-```sql
-.read insert_data.sql
+## Application Setup
+
+Use Python 3 and its built-in `sqlite3` module; no third-party package installation is required. First create `sports_cards.db` as shown above. The app looks for it beside `app.py`, reports setup instructions if it is missing, and never replaces it automatically. Python 3 must be installed and available to your terminal.
+
+Launch from Windows Git Bash with:
+
+```bash
+python app.py
 ```
 
-5. Verify that foreign keys are enabled:
+On macOS or Linux, use:
 
-```sql
-PRAGMA foreign_keys;
+```bash
+python3 app.py
 ```
 
-6. The database is now ready to use.
+## Major Application Operations
 
-## Database View
+1. **Search / Browse Cards** — search by partial player name, sport, team, or status; leave filters blank to browse all.
+2. **View Card Purchase and Sale Details** — show card attributes and joined purchase, seller, sale, and buyer details.
+3. **Add a New Card Purchase** — transactionally create a purchase, card, and purchase-item link.
+4. **Update a Card** — change status, team, description, serial number, or grade.
+5. **Inventory / Sales Summary Report** — show inventory and sales aggregates and cards grouped by sport.
+6. **Record a Card Sale** — transactionally create the sale and sale-item rows and mark the card sold.
 
-### `CurrentInventory`
+## Database Design
 
-The `CurrentInventory` view displays active sports cards that have been purchased but have not yet been sold.
+The seven-table relational design is `Seller`, `Purchase`, `PurchaseItem`, `Card`, `SaleItem`, `Sale`, and `Buyer`. A seller can be associated with purchases; each purchase is linked to cards through `PurchaseItem`, which records each card's acquisition price. A buyer can be associated with sales; `SaleItem` links each sale to its cards and records each card's sale price.
 
-It combines data from the following tables:
+Primary and foreign keys connect the records. Foreign-key enforcement prevents references to missing sellers, buyers, purchases, cards, or sales. CHECK constraints restrict seller and buyer types, card condition, status, year, grade range, and nonnegative amounts. `CurrentInventory` is a view that joins active, unsold cards to their purchase prices and sellers. `idx_card_playername` indexes `Card.PlayerName` for common player searches.
 
-- `Card`
-- `PurchaseItem`
-- `Purchase`
-- `Seller`
+## Transactions
 
-This allows current inventory information to be viewed in one place without repeatedly writing the same joins.
-
-## Database Index
-
-### `idx_card_playername`
-
-The database includes an index on:
-
-```sql
-Card.PlayerName
-```
-
-This index improves performance when searching or filtering cards by player name.
-
-## Design Changes
-
-The original practice ERD included the following entities:
-
-- `Seller`
-- `Card`
-- `Buyer`
-- `Sale`
-
-The final database design was expanded to include:
-
-- `Purchase`
-- `PurchaseItem`
-- `SaleItem`
-
-`PurchaseItem` connects purchases to individual cards. This allows one purchase transaction to contain multiple cards while still storing an individual purchase price for each card.
-
-`SaleItem` connects sales to individual cards. This allows one sale transaction to contain multiple cards while storing an individual sale price for each card.
-
-This structure better represents real sports card transactions and reduces repeated transaction data.
+`transaction.sql` demonstrates inserting a sale, its sale item, and a status update in one transaction, then rolling the example back. The application's purchase and sale operations also group related writes in one transaction; an error rolls back the entire operation. User-provided values are passed through SQLite placeholders.
 
 ## Testing
 
-The database was successfully recreated from scratch using only:
+The SQL files were run against a database recreated from `schema.sql` and `insert_data.sql`; all nine queries completed, the transaction demonstration rolled back, `PRAGMA integrity_check` returned `ok`, and `PRAGMA foreign_key_check` returned no violations. The application was run with Python 3.12 and passed 53 interactive checks covering all menu operations, filtering, validation, connection handling, purchase and sale persistence, duplicate-sale rejection, and purchase and sale rollback after simulated database errors. The database was recreated afterward to restore the original sample state.
 
-- `schema.sql`
-- `insert_data.sql`
+## Known Limitations
 
-The following tests were completed successfully:
+- The application records one card per purchase and one card per sale operation. The database design supports multiple cards in each transaction through the item tables.
+- Purchase `TotalAmount` is recorded as the purchase price entered for the single card added by the app.
+- Summary revenue is the sum of sale-item prices; fees and shipping are displayed in card details but are not included in the revenue total.
+- Profit is not reported because the schema does not define how fees, shipping, or shared purchase totals should be allocated to individual cards.
 
-- All tables were created.
-- All sample data loaded successfully.
-- Foreign key checks passed.
-- The database integrity check returned `ok`.
-- The `CurrentInventory` view returned records correctly.
-- The `idx_card_playername` index was created successfully.
-- CHECK constraints correctly rejected invalid data.
+## Reproduction Instructions
 
-## Database Files
+After cloning the repository, change into its root directory and run:
 
-The project currently uses the following files:
+```bash
+rm -f sports_cards.db
+sqlite3 sports_cards.db < schema.sql
+sqlite3 sports_cards.db < insert_data.sql
+bash run_queries.sh
+python app.py
+```
 
-- `schema.sql` — creates the database tables, relationships, constraints, view, and index.
-- `insert_data.sql` — inserts sample data into the database.
-- `README.md` — explains setup, database features, design changes, and testing.
+No repository URL is specified here because the canonical remote URL is not part of the project files.
+
+## Demonstration Guide
+
+1. Explain that the project tracks sports cards, acquisitions, buyers, and sales.
+2. Show `Database ER diagram (crow's foot).pdf` and explain the purchase and sale item tables.
+3. Launch `python app.py` in Windows Git Bash (`python3 app.py` on macOS or Linux).
+4. Browse cards and search for a partial player name.
+5. Show joined purchase and sale details for one active and one sold card.
+6. Update a card or add a card purchase.
+7. Show the inventory and sales summary.
+8. Record a sale and show that the card status and sale records were saved together.
+9. Recreate the database from the SQL files after the demonstration to restore sample data.
+
+## Key Design Decisions
+
+- `Purchase` stores transaction-level details; `PurchaseItem` stores each card and its individual acquisition price. This lets a purchase contain multiple cards without repeating the transaction fields.
+- `Sale` stores buyer and transaction details; `SaleItem` stores the cards and individual sale prices in that sale.
+- Foreign keys keep transaction records connected to valid sellers, buyers, and cards.
+- `CurrentInventory` centralizes a useful join for active cards that have not been sold.
+- `idx_card_playername` supports player-name searches.
+- Parameterized SQL keeps typed values separate from SQL commands.
+- A sale uses a transaction so its sale, sale item, and card status update either all persist or all roll back.
