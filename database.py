@@ -84,6 +84,38 @@ def buyer_exists(buyer_id):
         ).fetchone() is not None
 
 
+def get_sellers():
+    """Return sellers for the purchase form."""
+    with connect() as connection:
+        return connection.execute(
+            "SELECT SellerID, FirstName, LastName FROM Seller "
+            "ORDER BY LastName COLLATE NOCASE, FirstName COLLATE NOCASE"
+        ).fetchall()
+
+
+def get_buyers():
+    """Return buyers for the sale form."""
+    with connect() as connection:
+        return connection.execute(
+            "SELECT BuyerID, FirstName, LastName FROM Buyer "
+            "ORDER BY LastName COLLATE NOCASE, FirstName COLLATE NOCASE"
+        ).fetchall()
+
+
+def get_active_cards():
+    """Return cards eligible for sale."""
+    with connect() as connection:
+        return connection.execute(
+            """SELECT CardID, PlayerName, Sport, Team
+               FROM Card AS c
+               WHERE Status = 'Active'
+                 AND NOT EXISTS (
+                     SELECT 1 FROM SaleItem AS si WHERE si.CardID = c.CardID
+                 )
+               ORDER BY PlayerName COLLATE NOCASE, CardID"""
+        ).fetchall()
+
+
 def add_card_purchase(seller_id, purchase_date, payment_type, card, price):
     """Insert purchase, card, and purchase item atomically."""
     with connect() as connection:

@@ -18,6 +18,8 @@ SQLite. The command-line application is written in Python and uses the built-in 
 - `run_queries.sh` recreates the local database, runs `queries.sql`, and runs `transaction.sql`.
 - `app.py` provides the interactive six-operation command-line menu.
 - `database.py` contains the SQLite connection helper and parameterized database operations.
+- `web_app.py` serves the optional local browser interface and JSON API using Python's built-in HTTP server.
+- `web/index.html`, `web/styles.css`, and `web/app.js` provide the browser interface without third-party packages.
 - `Database ER diagram (crow's foot).pdf` is the project ER diagram.
 - `.gitignore` excludes the generated local database and Python cache files.
 - `sports_cards.db` is generated locally by the setup commands and is not required in the repository.
@@ -46,7 +48,7 @@ The script recreates `sports_cards.db` from the two SQL setup files, executes th
 
 ## Application Setup
 
-Use Python 3 and its built-in `sqlite3` module; no third-party package installation is required. First create `sports_cards.db` as shown above. The app looks for it beside `app.py`, reports setup instructions if it is missing, and never replaces it automatically. Python 3 must be installed and available to your terminal.
+Use Python 3 and its built-in `sqlite3` module; no third-party package installation is required. First create `sports_cards.db` as shown above. Both application entry points look for the database beside the project files, report setup instructions if it is missing, and never replace it automatically. Python 3 must be installed and available to your terminal.
 
 Launch from Windows Git Bash with:
 
@@ -59,6 +61,20 @@ On macOS or Linux, use:
 ```bash
 python3 app.py
 ```
+
+## Graphical Interface
+
+The project also includes a browser-based interface that uses Python's built-in HTTP server, plain HTML/CSS/JavaScript, and the same SQLite operations as the CLI. It is an optional front end; the CLI remains available and functional.
+
+Start it from the repository root. On Windows Git Bash:
+
+```bash
+python web_app.py
+```
+
+On macOS or Linux, run `python3 web_app.py`.
+
+The server opens the interface at `http://127.0.0.1:8000` and listens only on this computer. Keep the terminal open while using the page; press `Ctrl+C` there to stop the server. The interface requires the same existing `sports_cards.db` file as the CLI.
 
 ## Major Application Operations
 
@@ -81,7 +97,7 @@ Primary and foreign keys connect the records. Foreign-key enforcement prevents r
 
 ## Testing
 
-The SQL files were run against a database recreated from `schema.sql` and `insert_data.sql`; all nine queries completed, the transaction demonstration rolled back, `PRAGMA integrity_check` returned `ok`, and `PRAGMA foreign_key_check` returned no violations. The application was run with Python 3.12 and passed 53 interactive checks covering all menu operations, filtering, validation, connection handling, purchase and sale persistence, duplicate-sale rejection, and purchase and sale rollback after simulated database errors. The database was recreated afterward to restore the original sample state.
+The SQL files were run against a database recreated from `schema.sql` and `insert_data.sql`; all nine queries completed, the transaction demonstration rolled back, `PRAGMA integrity_check` returned `ok`, and `PRAGMA foreign_key_check` returned no violations. The CLI passed 53 interactive checks covering its menu operations, filtering, validation, connection handling, persistence, and transaction rollback. The browser API passed 20 checks covering static files, search, details, report data, purchase/update/sale writes, validation, and rollback after a simulated database error. Python and JavaScript syntax checks also passed, and the CLI still starts normally. The test database was isolated from the local sample database.
 
 ## Known Limitations
 
@@ -89,6 +105,7 @@ The SQL files were run against a database recreated from `schema.sql` and `inser
 - Purchase `TotalAmount` is recorded as the purchase price entered for the single card added by the app.
 - Summary revenue is the sum of sale-item prices; fees and shipping are displayed in card details but are not included in the revenue total.
 - Profit is not reported because the schema does not define how fees, shipping, or shared purchase totals should be allocated to individual cards.
+- The browser server is a local course/demo tool. It binds to `127.0.0.1` and is not intended for public hosting.
 
 ## Reproduction Instructions
 
@@ -102,13 +119,15 @@ bash run_queries.sh
 python app.py
 ```
 
+For the browser interface, run `python web_app.py` instead.
+
 No repository URL is specified here because the canonical remote URL is not part of the project files.
 
 ## Demonstration Guide
 
 1. Explain that the project tracks sports cards, acquisitions, buyers, and sales.
 2. Show `Database ER diagram (crow's foot).pdf` and explain the purchase and sale item tables.
-3. Launch `python app.py` in Windows Git Bash (`python3 app.py` on macOS or Linux).
+3. Launch `python web_app.py` in Windows Git Bash (`python3 web_app.py` on macOS or Linux) to demonstrate the browser interface. The CLI remains available with `python app.py`.
 4. Browse cards and search for a partial player name.
 5. Show joined purchase and sale details for one active and one sold card.
 6. Update a card or add a card purchase.
